@@ -13,6 +13,10 @@ Connect to node_ip:4000
 < { action: 'hello', value: 'screen' }
 > { action: 'ok', screen: 0 }
 
+> { action: 'left', value: '192.168.0.1' }
+
+> { action: 'right', value: '192.168.0.2' }
+
 Data
 ----
 > { action: 'clientBegin', value: 'clientidstring' }

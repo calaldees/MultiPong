@@ -17,13 +17,13 @@ Screen = module.exports.Screen = function Screen (c, screens) {
   this.on('left', function (object) {
     this.write({
       action: 'left',
-      ip: object.ipAddress
+      value: object.ipAddress
     });
   });
   this.on('right', function(object) {
     this.write({
       action: 'right',
-      ip: object.ipAddress
+      value: object.ipAddress
     });
   });
 
