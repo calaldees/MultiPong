@@ -17,6 +17,7 @@ colors = dict(
     background  = (  0,   0,   0),
     ball        = (255, 255, 255),
     bat         = (255, 255,   0),
+    zone        = (  0,   0, 100),
 )
 
 
@@ -56,6 +57,47 @@ class Ball(Mass):
             self.vel = (-self.vel[0], self.vel[1])
             
 
+class EventZone():
+    
+    all_zones = []
+    
+    def __init__(self, rectangle):
+        self.rectangle = rectangle
+        self.masss_in_zone = []
+        EventZone.all_zones.append(self)
+    
+    def trigger_mass_events(self):
+        pass
+    
+class NetZone(EventZone):
+
+    def __init__(self, rectangle=None):
+        # Shortcuts to define dead zone areas from strings. Automatically creates rectangle areas
+        default_zone_width = 20
+        if   rectangle == 'left':
+            rectangle = pygame.Rect( 0                                   ,  0                 , default_zone_width, screen.get_height() )
+        elif rectangle == 'right':
+            rectangle = pygame.Rect( screen.get_width()-default_zone_width, default_zone_width, default_zone_width, screen.get_height() )
+        
+        EventZone.__init__(self, rectangle)
+
+    def trigger_mass_events(self):
+        self.remove_masss_after_passthrough()
+        self.add_new_masss_to_zone()
+    
+    def remove_masss_after_passthrough(self):
+        for m in self.masss_in_zone:
+            if not self.rectangle.collidepoint(m.pos):
+                self.masss_in_zone.remove(m)
+                Mass.all_mass.remove(m)
+                print("mass removed: %s" % m)
+    
+    def add_new_masss_to_zone(self):
+        for m in Mass.all_mass:
+            if m not in self.masss_in_zone:
+                self.masss_in_zone.append(m)
+                print("net send: %s" % m)
+
 #----------------------------------------
 # Variables
 #----------------------------------------
@@ -76,6 +118,9 @@ def reset():
                 pos = (random.random()*screen.get_width(), random.random()*screen.get_height()),
                 vel = (random.random()*3                 , random.random()*3                  ),
             )
+        
+    EventZone.all_zones = []
+    NetZone('left')
     time_elapsed = 0
 
 
@@ -95,6 +140,10 @@ while running:
         
     screen.fill(colors['background'])
     
+    for z in EventZone.all_zones:
+        pygame.draw.rect(screen, colors['zone'], z.rectangle)
+        z.trigger_mass_events()
+    
     for b in Ball.all_balls:
         b.move()
         pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
@@ -105,6 +154,7 @@ while running:
     time_elapsed += 1
     
     pygame.display.update()
+    
 pygame.quit()
 
 print("Ticks Elapsed: %s" % time_elapsed)
