@@ -63,7 +63,7 @@ io.sockets.on('connection', function (socket) {
     if ((!screens[id]) || screens[id].state !== 'active') return socket.emit('error');
     screen = screens[id];
     state = 'active';
-    screen.client(socket.id);
+    screen.clientBegin(socket.id);
     socket.emit('begin');
   });
   socket.on('delta', function (delta) {
