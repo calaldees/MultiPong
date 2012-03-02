@@ -37,28 +37,41 @@ class Mass:
     all_mass = [] # A list of all generated mass's
     
     def __init__(self, pos=(0,0), vel=(0,0), mass=10, **kwargs):
-        self.pos   = pos
+        self.pos     = pos
+        self.pos_old = pos
         self.vel   = vel
         self.force = (0,0)
         self.mass  = float(mass)
         Mass.all_mass.append(self)
 
+    #@property
+    #def movement_bounding_rect(self):
+        #max_x = max(self.pos[0], self.pos_old[0])
+        #min_x = min(self.pos[0], self.pos_old[0])
+        #max_y = max(self.pos[1], self.pos_old[1])
+        #min_y = min(self.pos[1], self.pos_old[1])
+        #return pygame.Rect(min_x, min_y, max_x-min_x, max_y-min_y)
+
+
+    def flip_vel_x(self):
+        self.vel = (-self.vel[0],  self.vel[1])
+    def flip_vel_y(self):
+        self.vel = ( self.vel[0], -self.vel[1])
+
     def set_pos(self, pos):
+        self.pos_old = self.pos
         self.pos = pos
 
     def add_force(self, force):
         self.force = (self.force[0]+float(force[0]), self.force[1]+float(force[1]))
-        #print "added force %d,%d" % (force[0], force[1])
     
     def remove(self):
         Mass.all_mass.remove(self)
 
     def apply_force(self):
         if self.force != (0,0):
-            print("force before %d,%d" % (self.force[0], self.force[1]))
             self.vel = (self.vel[0] + self.force[0]/self.mass, self.vel[1] + self.force[1]/self.mass)
             self.force = (0,0) # Once the force is applied, reset it to zero
-            print("vel after %d,%d" % (self.vel[0], self.vel[1]))
     
     def move(self):
         """
@@ -74,8 +87,25 @@ class Ball(Mass):
 
     def __init__(self, *args, **kwargs):
         Mass.__init__(self, *args, **kwargs)
-        self.radius = kwargs.get('radius',3)
+        self.radius    = kwargs.get('radius',3)
+        self.rectangle = pygame.Rect(self.pos[0], self.pos[1], self.radius, self.radius)
         Ball.all_balls.append(self)
+
+    @property
+    def rectangle_old(self):
+        #if self.pos_old:
+            return pygame.Rect(self.pos_old[0], self.pos_old[1], self.rectangle.width, self.rectangle.height)
+        #else:
+        #    return self.rectangle
+
+    @property
+    def movement_bounding_rect(self):
+        return self.rectangle.union(self.rectangle_old)
+
+    def set_pos(self, pos):
+        Mass.set_pos(self, pos)
+        self.rectangle.x = pos[0]
+        self.rectangle.y = pos[1]
     
     def remove(self):
         Ball.all_balls.remove(self)
@@ -85,12 +115,12 @@ class Ball(Mass):
         Mass.move(self)
         # Bounce ball off top and bottom of screen by inverting velocity
         if self.pos[1] < 0 or self.pos[1] > screen.get_height():
-            self.vel = (self.vel[0], -self.vel[1])
-
+            self.flip_vel_y()
 
 class Bat(Mass):
 
     all_bats = []
+    air_viscosity = 0.96
 
     def __init__(self, *args, **kwargs):
         Mass.__init__(self, *args, **kwargs)
@@ -109,7 +139,27 @@ class Bat(Mass):
         # Bounce ball off top and bottom of screen by inverting velocity
         if self.rectangle.y < 0 or self.rectangle.bottom > screen.get_height():
             self.vel = (self.vel[0], -self.vel[1])
-        
+    
+    @staticmethod
+    def apply_air_viscocity_to_all_bats():
+        for bat in Bat.all_bats:
+            bat.vel = (bat.vel[0]*Bat.air_viscosity, bat.vel[1]*Bat.air_viscosity)
+            
+    @staticmethod
+    def apply_ball_collisions_for_all_bats():
+        for b in Ball.all_balls:
+            for bat in Bat.all_bats:
+                if bat.rectangle.colliderect(b.movement_bounding_rect):
+                    print "collide"
+                    rectangle_old = b.rectangle_old
+                    if rectangle_old.right <= bat.rectangle.left:
+                        b.flip_vel_x()
+                        b.set_pos((bat.rectangle.left-(b.radius*2)-1, b.pos[1]))
+                    if rectangle_old.left >= bat.rectangle.right:
+                        b.flip_vel_x()
+                        b.set_pos((bat.rectangle.right+1, b.pos[1]))
+
+    
 
     
 
@@ -216,12 +266,13 @@ def mainloop(ssock, left, right, inputs):
 
     reset()
     running = True
+    keys    = {}
     while running:
         clock.tick(60)
         
         # Inputs
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            if event.type == pygame.QUIT:
                 running = False
                 
             #if event.type == pygame.MOUSEMOTION:
@@ -229,14 +280,16 @@ def mainloop(ssock, left, right, inputs):
             #        mouse_diff = (event.pos[0]-last_mouse_pos[0], event.pos[1]-last_mouse_pos[1])
             #        Bat.all_bats[0].add_force(mouse_diff)
             #    last_mouse_pos = (event.pos[0], event.pos[1])
-                
-            if event.type == pygame.KEYDOWN:
-                bat = Bat.all_bats[0]
-                f   = 10
-                if event.key == pygame.K_UP     : bat.add_force(( 0,-f))
-                if event.key == pygame.K_DOWN   : bat.add_force(( 0, f))
-                if event.key == pygame.K_RIGHT  : bat.add_force(( f, 0))
-                if event.key == pygame.K_LEFT   : bat.add_force((-f, 0))
+
+
+        bat  = Bat.all_bats[0]
+        f    = 20
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]: running=False
+        if keys[pygame.K_UP    ]: bat.add_force(( 0,-f))
+        if keys[pygame.K_DOWN  ]: bat.add_force(( 0, f))
+        if keys[pygame.K_LEFT  ]: bat.add_force((-f, 0))
+        if keys[pygame.K_RIGHT ]: bat.add_force(( f, 0))
 
 
         # Black screen
@@ -257,13 +310,16 @@ def mainloop(ssock, left, right, inputs):
             z.trigger_mass_events()
         
         # Apply forces and move all mass's
+        Bat.apply_ball_collisions_for_all_bats()
         for m in Mass.all_mass:
             m.apply_force()
             m.move()
+        Bat.apply_air_viscocity_to_all_bats()
+        
         
         # Draw balls
         for b in Ball.all_balls:
-            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
+            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]+b.radius/2),int(b.pos[1]+b.radius/2)), b.radius) #, width=0
         # Draw bats
         for bat in Bat.all_bats:
             pygame.draw.rect(screen, colors['bat'], bat.rectangle)
