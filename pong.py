@@ -40,6 +40,9 @@ class Mass:
         self.vel = vel
         Mass.all_mass.append(self)
     
+    def remove(self):
+        Mass.all_mass.remove(self)
+    
     def move(self):
         """
         Increment the 
@@ -54,12 +57,16 @@ class Ball(Mass):
         Mass.__init__(self,**kwargs)
         self.radius = kwargs.get('radius',3)
         Ball.all_balls.append(self)
-        
+    
+    def remove(self):
+        Ball.all_balls.remove(self)
+        Mass.remove(self)
+    
     def move(self):
         Mass.move(self)
         if self.pos[1] < 0 or self.pos[1] > screen.get_height():
             self.vel = (self.vel[0], -self.vel[1])
-        if self.pos[0] < 0 or self.pos[0] > screen.get_width():
+        if  self.pos[0] > screen.get_width(): #self.pos[0] < 0 or
             self.vel = (-self.vel[0], self.vel[1])
             
 
@@ -73,10 +80,22 @@ class EventZone():
         EventZone.all_zones.append(self)
     
     def trigger_mass_events(self):
-        pass
+        # Leave area event
+        for m in self.masss_in_zone:
+            if not self.rectangle.collidepoint(m.pos): # If mass has moved out of the zone then perform an event
+                self.event_leave(m)
+        
+        # Enter area event
+        for m in Mass.all_mass:
+            if m not in self.masss_in_zone and self.rectangle.collidepoint(m.pos):
+                self.masss_in_zone.append(m)
+                self.event_enter(m)
+
+        
+        
     
 class NetZone(EventZone):
-
+    
     def __init__(self, rectangle=None):
         # Shortcuts to define dead zone areas from strings. Automatically creates rectangle areas
         default_zone_width = 20
@@ -84,25 +103,16 @@ class NetZone(EventZone):
             rectangle = pygame.Rect( 0                                   ,  0                 , default_zone_width, screen.get_height() )
         elif rectangle == 'right':
             rectangle = pygame.Rect( screen.get_width()-default_zone_width, default_zone_width, default_zone_width, screen.get_height() )
-        
+        # Call super contructor
         EventZone.__init__(self, rectangle)
-
-    def trigger_mass_events(self):
-        self.remove_masss_after_passthrough()
-        self.add_new_masss_to_zone()
     
-    def remove_masss_after_passthrough(self):
-        for m in self.masss_in_zone:
-            if not self.rectangle.collidepoint(m.pos):
-                self.masss_in_zone.remove(m)
-                Mass.all_mass.remove(m)
-                print("mass removed: %s" % m)
+    def event_leave(self, m):
+        self.masss_in_zone.remove(m)
+        m.remove()
+        print("mass removed: %s" % m)
     
-    def add_new_masss_to_zone(self):
-        for m in Mass.all_mass:
-            if m not in self.masss_in_zone:
-                self.masss_in_zone.append(m)
-                print("net send: %s" % m)
+    def event_enter(self, m):
+        print("net send: %s" % m)
 
 #----------------------------------------
 # Variables
