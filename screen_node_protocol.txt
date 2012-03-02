@@ -1,0 +1,25 @@
+Basic protocol for Screen -> Node Server
+
+> is Node to Screen
+< is Screen to Node
+
+All data is JSON.parse compatible, frames are separated with \n, I'll show the javascript objects here
+
+Handshake
+---------
+
+Connect to node_ip:4000
+> { action: 'hello', value: 'node' }
+< { action: 'hello', value: 'screen' }
+> { action: 'ok', screen: 0 }
+
+Data
+----
+> { action: 'clientBegin', value: 'clientidstring' }
+
+> { action: 'delta', client: 'clientidstring', value: 0 }
+
+> { action: 'delta', client: 'clientidstring', value: -30 }
+
+> { action: 'clientEnd', value: 'clientidstring }
+
