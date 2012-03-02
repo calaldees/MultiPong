@@ -6,7 +6,8 @@
 var express = require('express')
   , routes = require('./routes')
   , net = require('net')
-  , protos = require('./lib/prototypes');
+  , protos = require('./lib/prototypes')
+  , repl = require('repl');
 
 var app = module.exports = express.createServer()
   , io = require('socket.io').listen(app);
@@ -62,3 +63,8 @@ io.sockets.on('connection', function (socket) {
 app.listen(3000);
 tcp_server.listen(4000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+
+var c = repl.start().context
+
+c.app = app;
+c.screens = screens
