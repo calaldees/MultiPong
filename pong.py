@@ -298,9 +298,14 @@ def mainloop(ssock, left, right, inputs):
                 if d:
                     d = json.loads(d)
                     print "from inputs:", d
+                    if d['action'] == "hello":
+                        inputs.send(json.dumps({'action':'hello', 'value':'screen'})+"\n")
                     if d['action'] == "left":
-                        print "adding left", (d['ip'], 5000)
-                        left = socket.create_connection((d['ip'], 5000))
+                        print "adding left", (d['value'], 5000)
+                        left = socket.create_connection((d['value'], 5000))
+                    if d['action'] == "right":
+                        print "adding right", (d['value'], 5000)
+                        right = socket.create_connection((d['value'], 5000))
         
     pygame.quit()
 
@@ -335,10 +340,6 @@ def main(argv):
     if args.inputs:
         n, p = args.inputs.split(":")
         inputs = socket.create_connection((n, int(p)))
-        print "a", json.loads(inputs.recv(1024)) == "MultiPong NODE"
-        inputs.send(json.dumps("MultiPong SCREEN")+"\n")
-        print "b", json.loads(inputs.recv(1024)) == "MultiPong OK"
-
 
     mainloop(ssock, left, right, inputs)
 
