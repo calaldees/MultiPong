@@ -10,20 +10,22 @@ Handshake
 
 Connect to node_ip:4000
 > { action: 'hello', value: 'node' }
-< { action: 'hello', value: 'screen' }
+< { action: 'hello', value: 'screen', port: 5000 }
 > { action: 'ok', screen: 0 }
 
-> { action: 'left', value: '192.168.0.1' }
+> { action: 'left', value: '192.168.0.1', port: 5000 }
 
-> { action: 'right', value: '192.168.0.2' }
+> { action: 'right', value: '192.168.0.2', port: 5001 }
 
 Data
 ----
 > { action: 'clientBegin', value: 'clientidstring' }
 
-> { action: 'delta', client: 'clientidstring', value: 0 }
+> { action: 'deltaX', client: 'clientidstring', value: 0 }
 
-> { action: 'delta', client: 'clientidstring', value: -30 }
+> { action: 'deltaY', client: 'clientidstring', value: -30 }
+
+> { action: 'color', client: 'clientidstring', value: 'red' }
 
 > { action: 'clientEnd', value: 'clientidstring }
 
