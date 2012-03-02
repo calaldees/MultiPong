@@ -257,7 +257,7 @@ def reset():
 # Main Loop
 #----------------------------------------
 
-def mainloop(ssock, left, right, inputs):
+def mainloop(args, ssock, left, right, inputs):
     global time_elapsed
     global last_mouse_pos
 
@@ -352,13 +352,14 @@ def mainloop(ssock, left, right, inputs):
                     d = json.loads(d)
                     print "from inputs:", d
                     if d['action'] == "hello":
-                        inputs.send(json.dumps({'action':'hello', 'value':'screen'})+"\n")
+                        print "responding to hello"
+                        inputs.send(json.dumps({'action':'hello', 'value':'screen', 'port': args.port})+"\n")
                     if d['action'] == "left":
-                        print "adding left", (d['value'], 5000)
-                        left = socket.create_connection((d['value'], 5000))
+                        print "adding left"
+                        left = socket.create_connection((d['value'], int(d['port'])))
                     if d['action'] == "right":
-                        print "adding right", (d['value'], 5000)
-                        right = socket.create_connection((d['value'], 5000))
+                        print "adding right"
+                        right = socket.create_connection((d['value'], int(d['port'])))
         
     pygame.quit()
 
@@ -394,7 +395,7 @@ def main(argv):
         n, p = args.inputs.split(":")
         inputs = socket.create_connection((n, int(p)))
 
-    mainloop(ssock, left, right, inputs)
+    mainloop(args, ssock, left, right, inputs)
 
 
 if __name__ == "__main__":
