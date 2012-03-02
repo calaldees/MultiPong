@@ -7,18 +7,16 @@ var c = net.createConnection(4000, function () {
     console.log('data', data);
     switch (state) {
       case 'handshaking':
-        if (data !== 'MultiPong NODE') return c.end();
+        if (data.action !== 'hello' || data.value !== 'node') return c.end();
         console.log('handshaking -> waiting');
-        c.write(JSON.stringify('MultiPong SCREEN') + '\n');
+        c.write(JSON.stringify({action: 'hello', value: 'screen'}) + '\n');
         state = 'waiting';
         break;
       case 'waiting':
-        if (data !== 'MultiPong OK') return c.end();
-        console.log('waiting -> active');
+        if (data.action === 'ok' && data.screen) return c.end();
+        console.log('waiting -> active', data.screen);
         state = 'active';
         break;
-      default:
-        console.log('active');
     }
   }
   var buffer = ''
@@ -30,7 +28,7 @@ var c = net.createConnection(4000, function () {
         try {
           process_data(JSON.parse(json));
         } catch (e) {
-          console.log('JSON Error');
+          console.log('JSON Error', json);
         }
       buffer = buffer.slice(index + 1);
       if (buffer.indexOf('\n') > -1) setTimeout(function () {

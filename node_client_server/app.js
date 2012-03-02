@@ -46,6 +46,37 @@ app.get('/', function (req, res) {
   res.render('index', {screens: screens});
 });
 
+app.get('/screen/:id', function (req, res) {
+  var id = req.params.id * 1;
+  if ((!screens[id]) || screens[id].state !== 'active') return res.render('no_screen');
+  res.render('screen', {screen: screens[id]});
+});
+
+
+io.sockets.on('connection', function (socket) {
+  var state = 'handshake';
+  var screen = null;
+  socket.emit('hello');
+  socket.on('screen', function (id) {
+    if (state !== 'handshake') return socket.emit('error')
+    var id = id * 1;
+    if ((!screens[id]) || screens[id].state !== 'active') return socket.emit('error');
+    screen = screens[id];
+    state = 'active';
+    screen.client(socket.id);
+    socket.emit('begin');
+  });
+  socket.on('delta', function (delta) {
+    console.log('delta', delta);
+    if (state !== 'active') return socket.emit('error');
+    screen.delta(socket.id, delta);
+    console.log('ok');
+  });
+  socket.on('disconnect', function () {
+    screen.clientEnd(socket.id);
+  });
+});
+
 app.listen(3000);
 tcp_server.listen(4000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
