@@ -119,6 +119,7 @@ time_elapsed = 0
 #----------------------------------------
 
 def reset():
+    global time_elapsed
     for i in range(30):
         b = Ball(
                 pos = (random.random()*screen.get_width(), random.random()*screen.get_height()),
@@ -162,6 +163,17 @@ def mainloop(ssock, left, right, inputs):
         time_elapsed += 1
         
         pygame.display.update()
+
+        [readable, writable, errors] = select([ssock, left, right, inputs], [], [], 0)
+        for r in readable:
+            if r == ssock:
+                pass
+            if r == left:
+                pass
+            if r == right:
+                pass
+            if r == inputs:
+                pass
         
     pygame.quit()
 
