@@ -114,10 +114,11 @@ class NetZone(EventZone):
     def event_leave(self, m):
         self.masss_in_zone.remove(m)
         m.remove()
-        print("mass removed: %s" % m)
+        #print("mass removed: %s" % m)
     
     def event_enter(self, m):
-        print("net send: %s" % m)
+        #print("net send: %s" % m)
+        pass
 
 
 class ScoreZone(EventZone):
@@ -136,7 +137,7 @@ class ScoreZone(EventZone):
     def event_enter(self, m):
         if callable(self.score_func):
             self.score_func(m)
-        print("score!: %s" % m)
+        #print("score!: %s" % m)
         m.remove()
 
 
@@ -219,11 +220,19 @@ def mainloop(ssock, left, right, inputs):
                 if d.startswith("right"):
                     right = tmp_sock
             if r == left:
-                pass
+                d = r.recv(1024)
+                print "from left:", d
             if r == right:
-                pass
+                d = r.recv(1024)
+                print "from right:", d
             if r == inputs:
-                pass
+                d = r.recv(1024)
+                if d:
+                    d = json.loads(d)
+                    print "from inputs:", d
+                    if d['action'] == "left":
+                        print "adding left", (d['ip'], 5000)
+                        left = socket.create_connection((d['ip'], 5000))
         
     pygame.quit()
 
@@ -235,11 +244,12 @@ def main(argv):
     parser.add_argument('--left')
     parser.add_argument('--right')
     parser.add_argument('--inputs')
-    parser.add_argument('--port', type=int, default=47474)
+    parser.add_argument('--bind', default="0.0.0.0")
+    parser.add_argument('--port', type=int, default=5000)
     args = parser.parse_args(argv[1:])
 
     ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.bind(("0.0.0.0", args.port))
+    ssock.bind((args.bind, args.port))
 
     left = None
     if args.left:
@@ -257,6 +267,10 @@ def main(argv):
     if args.inputs:
         n, p = args.inputs.split(":")
         inputs = socket.create_connection((n, int(p)))
+        print "a", json.loads(inputs.recv(1024)) == "MultiPong NODE"
+        inputs.send(json.dumps("MultiPong SCREEN")+"\n")
+        print "b", json.loads(inputs.recv(1024)) == "MultiPong OK"
+
 
     mainloop(ssock, left, right, inputs)
 
