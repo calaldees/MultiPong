@@ -72,10 +72,9 @@ Screen = module.exports.Screen = function Screen (c, screens) {
         }
         process_data(json);
       buffer = buffer.slice(index + 1);
-/*      if (buffer.indexOf('\n') > -1) setTimeout(function () {
+      if (buffer.indexOf('\n') > -1) setTimeout(function () {
         c.emit('data', '');
       }, 100);
-*/
     }
   });
   c.on('end', function () {
