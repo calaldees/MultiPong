@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import pygame
-
 import random
 import argparse
 import sys
@@ -12,7 +11,7 @@ import json
 #----------------------------------------
 # Pygame Setup
 #----------------------------------------
-pygame.init()     
+pygame.init()
 pygame.display.set_mode((640, 480))
 screen = pygame.display.get_surface()
 clock = pygame.time.Clock()
@@ -117,6 +116,7 @@ class Ball(Mass):
         if self.pos[1] < 0 or self.pos[1] > screen.get_height():
             self.flip_vel_y()
 
+
 class Bat(Mass):
 
     all_bats = []
@@ -159,9 +159,6 @@ class Bat(Mass):
                         b.flip_vel_x()
                         b.set_pos((bat.rectangle.right+1, b.pos[1]))
 
-    
-
-    
 
 class EventZone():
     
