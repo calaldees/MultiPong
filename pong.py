@@ -34,6 +34,9 @@ class Mass:
         Mass.all_mass.append(self)
     
     def move(self):
+        """
+        Increment the 
+        """
         self.pos = (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1])
 
 class Ball(Mass):
@@ -70,8 +73,8 @@ time_elapsed = 0
 def reset():
     for i in range(30):
         b = Ball(
-                pos = (random.randrange(0,screen.get_width()), random.randrange(0,screen.get_height())),
-                vel = (random.randrange(0,3)                 , random.randrange(0,3)                  ),
+                pos = (random.random()*screen.get_width(), random.random()*screen.get_height()),
+                vel = (random.random()*3                 , random.random()*3                  ),
             )
     time_elapsed = 0
 
@@ -94,7 +97,7 @@ while running:
     
     for b in Ball.all_balls:
         b.move()
-        pygame.draw.circle(screen, colors['ball'], b.pos, b.radius) #, width=0
+        pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
 
 
     pygame.draw.rect(screen, colors['bat'], test_rect)
