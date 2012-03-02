@@ -19,28 +19,47 @@ colors = dict(
     bat         = (255, 255,   0),
 )
 
-max_balls = 30
-
 
 #----------------------------------------
 # Class's
 #----------------------------------------
 
 class Mass:
-    def __init__(self): #xpos, ypos, size
-        self.xpos  = 0 #xpos
-        self.ypos  = 0 #ypos
-        self.size  = 0 #size
-        self.x_vel = 0
-        self.y_vel = 0
-        self.size  = 0
+
+    all_mass = [] # A list of all generated mass's
+    
+    def __init__(self, pos=(0,0), vel=(0,0)):
+        self.pos = pos
+        self.vel = vel
+        Mass.all_mass.append(self)
+    
+    def move(self):
+        self.pos = (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1])
+
+class Ball(Mass):
+
+    all_balls = [] # A sub set of mass's that is only the ball objects
+
+    def __init__(self, **kwargs):
+        Mass.__init__(self,**kwargs)
+        self.radius = kwargs.get('radius',3)
+        Ball.all_balls.append(self)
+        
+    def move(self):
+        Mass.move(self)
+        if self.pos[1] < 0 or self.pos[1] > screen.get_height():
+            self.vel = (self.vel[0], -self.vel[1])
+        if self.pos[0] < 0 or self.pos[0] > screen.get_width():
+            self.vel = (-self.vel[0], self.vel[1])
+            
 
 #----------------------------------------
 # Variables
 #----------------------------------------
 
 test_rect = pygame.Rect(100,100,10,50);
-#blocks = [Mass() for i in range(num_blocks)];
+
+
 
 time_elapsed = 0
 
@@ -49,6 +68,11 @@ time_elapsed = 0
 #----------------------------------------
 
 def reset():
+    for i in range(30):
+        b = Ball(
+                pos = (random.randrange(0,screen.get_width()), random.randrange(0,screen.get_height())),
+                vel = (random.randrange(0,3)                 , random.randrange(0,3)                  ),
+            )
     time_elapsed = 0
 
 
@@ -68,7 +92,10 @@ while running:
         
     screen.fill(colors['background'])
     
-    #for m in blocks:
+    for b in Ball.all_balls:
+        b.move()
+        pygame.draw.circle(screen, colors['ball'], b.pos, b.radius) #, width=0
+
 
     pygame.draw.rect(screen, colors['bat'], test_rect)
     
