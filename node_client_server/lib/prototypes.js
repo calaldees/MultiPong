@@ -6,6 +6,7 @@ Screen = module.exports.Screen = function Screen (c, screens) {
   this.c = c;
   this.state = 'handshaking';
   this.write({action: 'hello', value: 'node'});
+  this.clients = [];
   setTimeout(function () {
     if (self.state !== 'handshaking') return;
     console.log('handshake timeout');
@@ -17,13 +18,15 @@ Screen = module.exports.Screen = function Screen (c, screens) {
   this.on('left', function (object) {
     this.write({
       action: 'left',
-      value: object.ipAddress
+      value: object.ipAddress,
+      port: object.port
     });
   });
   this.on('right', function(object) {
     this.write({
       action: 'right',
-      value: object.ipAddress
+      value: object.ipAddress,
+      port: object.port
     });
   });
 
@@ -34,6 +37,7 @@ Screen = module.exports.Screen = function Screen (c, screens) {
       case 'handshaking':
         if (data.action === 'hello' && data.value === 'screen') {
           self.ipAddress = c.remoteAddress;
+          self.port = data.port || 5000;
           self.index = screens.length;
           self.write({action: 'ok', screen: self.index});
           screens[self.index] = self;
@@ -94,11 +98,24 @@ Screen.prototype.clientBegin = function (client) {
     value: client
   });
 }
-Screen.prototype.delta = function (client, delta) {
+Screen.prototype.deltaX = function (client, delta) {
   this.write({
-    action: 'delta',
+    action: 'deltaX',
     client: client,
     value: delta
+  });
+}
+Screen.prototype.deltaY = function (client, delta) {
+  this.write({
+    action: 'deltaY',
+    client: client,
+    value: delta
+  });
+}
+Screen.prototype.color = function (client, color) {
+  this.write({
+    action: 'color',
+    value: color
   });
 }
 Screen.prototype.clientEnd = function (client) {
@@ -108,3 +125,43 @@ Screen.prototype.clientEnd = function (client) {
   });
 }
 
+module.exports.Client = function Client (socket, screens) {
+  var self = this;
+  this.socket = socket;
+  this.id = socket.id;
+  this.state = 'handshake';
+  socket.emit('hello');
+  socket.on('screen', function (id) {
+    if (self.state !== 'handshake') return socket.emit('error');
+    var id = id * 1;
+    if ((!screens[id]) || screens[id].state !== 'active') return socket.emit('error');
+    self.screen = screens[id];
+    self.screen.clients.push(self);
+    self.state = 'active';
+    self.screen.clientBegin(socket.id);
+    socket.emit('begin');
+  });
+  socket.on('deltaX', function (delta) {
+    console.log('deltaX', delta);
+    if (self.state !== 'active') return socket.emit('error');
+    self.screen.deltaX(socket.id, delta);
+  });
+  socket.on('deltaY', function (delta) {
+    console.log('deltaY', delta);
+    if (self.state !== 'active') return socket.emit('error');
+    self.screen.deltaY(socket.id, delta);
+  });
+  socket.on('color', function (color) {
+    console.log('color', color);
+    if (self.state !== 'active') return socket.emit('error');
+    self.screen.color(socket.id, color);
+  });
+  socket.on('disconnect', function () {
+    if (self.screen) {
+      self.screen.clientEnd(socket.id);
+      var index = self.screen.clients.indexOf(self);
+      if (index > -1)
+        self.screen.clients.splice(index,1);
+    }
+  });
+}

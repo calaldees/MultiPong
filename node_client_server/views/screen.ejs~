@@ -1,6 +1,6 @@
 <div id="screen">
   <div id="area" class="noselect">
-    <div id="control" class="noselect"></div>
+    <div id="control" class="noselect"> </div>
   </div>
   <div id="foot">
     <div>

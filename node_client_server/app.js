@@ -11,6 +11,8 @@ var express = require('express')
 var app = module.exports = express.createServer()
   , io = require('socket.io').listen(app);
 
+io.set('log level', 1)
+
 // Configuration
 var screens = [];
 
@@ -54,27 +56,7 @@ app.get('/screen/:id', function (req, res) {
 
 
 io.sockets.on('connection', function (socket) {
-  var state = 'handshake';
-  var screen = null;
-  socket.emit('hello');
-  socket.on('screen', function (id) {
-    if (state !== 'handshake') return socket.emit('error')
-    var id = id * 1;
-    if ((!screens[id]) || screens[id].state !== 'active') return socket.emit('error');
-    screen = screens[id];
-    state = 'active';
-    screen.client(socket.id);
-    socket.emit('begin');
-  });
-  socket.on('delta', function (delta) {
-    console.log('delta', delta);
-    if (state !== 'active') return socket.emit('error');
-    screen.delta(socket.id, delta);
-    console.log('ok');
-  });
-  socket.on('disconnect', function () {
-    screen.clientEnd(socket.id);
-  });
+  var client = new protos.Client(socket, screens);
 });
 
 app.listen(3000);
