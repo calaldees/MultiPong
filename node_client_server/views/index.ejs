@@ -1,1 +1,7 @@
 <h1> Welcome </h1>
+<h2> Choose which screen you wish to connect to </h2>
+<ul>
+  <% for (var i in screens) { var screen = screens[i] %>
+    <li><a href="/screen/<%=i%>">Screen <%=(i*1)+1%></a></li>
+  <% } %>
+</ul>
