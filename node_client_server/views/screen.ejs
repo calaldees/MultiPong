@@ -1,0 +1,48 @@
+<div id="status" data-screen="<%=screen.index%>"></div>
+<div id="debug"></div>
+
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script>
+$(function () {
+  var status = $('#status');
+  var debug = $('#debug');
+  var socket = io.connect();
+  var joystick = new VirtualJoystick({
+    container: $('body')[0],
+    mouseSupport: true,
+    range: 10
+  });
+  var interval = null;
+  var prevY = 0;
+  var maxY = 100;
+
+  function updateInterval() {
+    var deltaY = joystick.deltaY();
+    var sign = deltaY < 0 ? -1 : 1;
+    var abs = Math.abs(deltaY);
+    var deltaY = sign * (abs > maxY ? maxY : abs);
+    debug.text(deltaY);
+    if (prevY !== deltaY) {
+      socket.emit('delta', deltaY);
+      debug.text(deltaY + ' changed');
+    }
+    prevY = deltaY;
+  }
+
+  socket.on('hello', function () {
+    socket.emit('screen', status.data('screen'));
+    status.text('Connected, please wait...');
+  });
+
+  socket.on('begin', function () {
+    status.text('Go!');
+    interval = setInterval(updateInterval, 100);
+  });
+
+  socket.on('end', function () {
+    status.text('Game Over');
+    clearInterval(interval);
+    interval = null;
+  });
+});
+</script>
