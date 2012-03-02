@@ -134,7 +134,7 @@ def reset():
 # Main Loop
 #----------------------------------------
 
-def mainloop():
+def mainloop(ssock, left, right, inputs):
     global time_elapsed
 
     reset()
@@ -157,7 +157,6 @@ def mainloop():
             b.move()
             pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
 
-
         pygame.draw.rect(screen, colors['bat'], test_rect)
         
         time_elapsed += 1
@@ -166,20 +165,36 @@ def mainloop():
         
     pygame.quit()
 
-print("Ticks Elapsed: %s" % time_elapsed)
+    print("Ticks Elapsed: %s" % time_elapsed)
 
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('--left')
     parser.add_argument('--right')
+    parser.add_argument('--inputs')
     parser.add_argument('--port', type=int, default=47474)
     args = parser.parse_args(argv[1:])
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("0.0.0.0", args.port))
+    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ssock.bind(("0.0.0.0", args.port))
 
-    mainloop()
+    left = None
+    if args.left:
+        n, p = args.left.split(":")
+        left = socket.create_connection((n, int(p)))
+
+    right = None
+    if args.right:
+        n, p = args.right.split(":")
+        right = socket.create_connection((n, int(p)))
+
+    inputs = None
+    if args.inputs:
+        n, p = args.inputs.split(":")
+        inputs = socket.create_connection((n, int(p)))
+
+    mainloop(ssock, left, right, inputs)
 
 
 if __name__ == "__main__":
