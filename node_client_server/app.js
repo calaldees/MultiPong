@@ -39,6 +39,7 @@ app.configure('production', function(){
 // Routes
 
 app.get('/', function (req, res) {
+  if (screens.length === 0) return res.render('no_screens');
   for (var i in screens) {
     if (screens[i].state != 'active') return res.render('waiting');
   }
