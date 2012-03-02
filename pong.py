@@ -183,6 +183,7 @@ def mainloop(ssock, left, right, inputs):
         [readable, writable, errors] = select(l, [], [], 0)
         for r in readable:
             if r == ssock:
+                continue
                 tmp_sock = ssock.accept()
                 d = tmp_sock.recv(1024)
                 if d.startswith("left"):
