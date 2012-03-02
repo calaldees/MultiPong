@@ -1,6 +1,12 @@
+#!/usr/bin/python
+
 import pygame
 
 import random
+import argparse
+import sys
+import socket
+from select import select
 
 #----------------------------------------
 # Pygame Setup
@@ -128,33 +134,53 @@ def reset():
 # Main Loop
 #----------------------------------------
 
-reset()
-running = True
-while running:
-    clock.tick(60)
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-            running = False
-        #elif event.type == pygame.MOUSEMOTION:
+def mainloop():
+    global time_elapsed
+
+    reset()
+    running = True
+    while running:
+        clock.tick(60)
         
-    screen.fill(colors['background'])
-    
-    for z in EventZone.all_zones:
-        pygame.draw.rect(screen, colors['zone'], z.rectangle)
-        z.trigger_mass_events()
-    
-    for b in Ball.all_balls:
-        b.move()
-        pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                running = False
+            #elif event.type == pygame.MOUSEMOTION:
+            
+        screen.fill(colors['background'])
+        
+        for z in EventZone.all_zones:
+            pygame.draw.rect(screen, colors['zone'], z.rectangle)
+            z.trigger_mass_events()
+        
+        for b in Ball.all_balls:
+            b.move()
+            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]),int(b.pos[1])), b.radius) #, width=0
 
 
-    pygame.draw.rect(screen, colors['bat'], test_rect)
-    
-    time_elapsed += 1
-    
-    pygame.display.update()
-    
-pygame.quit()
+        pygame.draw.rect(screen, colors['bat'], test_rect)
+        
+        time_elapsed += 1
+        
+        pygame.display.update()
+        
+    pygame.quit()
 
 print("Ticks Elapsed: %s" % time_elapsed)
+
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--left')
+    parser.add_argument('--right')
+    parser.add_argument('--port', type=int, default=47474)
+    args = parser.parse_args(argv[1:])
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("0.0.0.0", args.port))
+
+    mainloop()
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
