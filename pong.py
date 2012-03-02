@@ -50,6 +50,7 @@ class Mass:
         """
         self.pos = (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1])
 
+
 class Ball(Mass):
 
     all_balls = [] # A sub set of mass's that is only the ball objects
@@ -68,7 +69,7 @@ class Ball(Mass):
         # Bounce ball off top and bottom of screen by inverting velocity
         if self.pos[1] < 0 or self.pos[1] > screen.get_height():
             self.vel = (self.vel[0], -self.vel[1])
-            
+
 
 class EventZone():
     
@@ -96,9 +97,8 @@ class EventZone():
         pass
     def event_leave(self, m):
         pass
-        
-        
-    
+
+
 class NetZone(EventZone):
     
     def __init__(self, rectangle=None):
@@ -138,15 +138,13 @@ class ScoreZone(EventZone):
             self.score_func(m)
         print("score!: %s" % m)
         m.remove()
-    
+
 
 #----------------------------------------
 # Variables
 #----------------------------------------
 
 test_rect = pygame.Rect(100,100,10,50);
-
-
 
 time_elapsed = 0
 
