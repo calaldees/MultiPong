@@ -64,10 +64,6 @@ class Mass:
         """
         Increment the 
         """
-        # Bounce ball off top and bottom of screen by inverting velocity
-        if self.pos[1] < 0 or self.pos[1] > screen.get_height():
-            self.vel = (self.vel[0], -self.vel[1])
-
         self.set_pos( (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1]) )
 
 
@@ -86,6 +82,9 @@ class Ball(Mass):
     
     def move(self):
         Mass.move(self)
+        # Bounce ball off top and bottom of screen by inverting velocity
+        if self.pos[1] < 0 or self.pos[1] > screen.get_height():
+            self.vel = (self.vel[0], -self.vel[1])
             
 
 class Bat(Mass):
@@ -103,7 +102,14 @@ class Bat(Mass):
         Mass.set_pos(self, pos)
         self.rectangle.x = pos[0]
         self.rectangle.y = pos[1]
+    
+    def move(self):
+        Mass.move(self)
+        # Bounce ball off top and bottom of screen by inverting velocity
+        if self.rectangle.y < 0 or self.rectangle.bottom > screen.get_height():
+            self.vel = (self.vel[0], -self.vel[1])
         
+
     
 
 class EventZone():
@@ -216,11 +222,21 @@ def mainloop(ssock, left, right, inputs):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
-            elif event.type == pygame.MOUSEMOTION:
-                if last_mouse_pos:
-                    mouse_diff = (event.pos[0]-last_mouse_pos[0], event.pos[1]-last_mouse_pos[1])
-                    Bat.all_bats[0].add_force(mouse_diff)
-                last_mouse_pos = (event.pos[0], event.pos[1])
+                
+            #if event.type == pygame.MOUSEMOTION:
+            #    if last_mouse_pos:
+            #        mouse_diff = (event.pos[0]-last_mouse_pos[0], event.pos[1]-last_mouse_pos[1])
+            #        Bat.all_bats[0].add_force(mouse_diff)
+            #    last_mouse_pos = (event.pos[0], event.pos[1])
+                
+            if event.type == pygame.KEYDOWN:
+                bat = Bat.all_bats[0]
+                f   = 10
+                if event.key == pygame.K_UP     : bat.add_force(( 0,-f))
+                if event.key == pygame.K_DOWN   : bat.add_force(( 0, f))
+                if event.key == pygame.K_RIGHT  : bat.add_force(( f, 0))
+                if event.key == pygame.K_LEFT   : bat.add_force((-f, 0))
+
 
         # Black screen
         screen.fill(colors['background'])
