@@ -7,6 +7,7 @@ import argparse
 import sys
 import socket
 from select import select
+import json
 
 #----------------------------------------
 # Pygame Setup
@@ -174,10 +175,20 @@ def mainloop(ssock, left, right, inputs):
         
         pygame.display.update()
 
-        [readable, writable, errors] = select([ssock, left, right, inputs], [], [], 0)
+        l = []
+        if ssock: l.append(ssock)
+        if left: l.append(left)
+        if right: l.append(right)
+        if inputs: l.append(inputs)
+        [readable, writable, errors] = select(l, [], [], 0)
         for r in readable:
             if r == ssock:
-                pass
+                tmp_sock = ssock.accept()
+                d = tmp_sock.recv(1024)
+                if d.startswith("left"):
+                    left = tmp_sock
+                if d.startswith("right"):
+                    right = tmp_sock
             if r == left:
                 pass
             if r == right:
@@ -205,11 +216,13 @@ def main(argv):
     if args.left:
         n, p = args.left.split(":")
         left = socket.create_connection((n, int(p)))
+        left.send("left")
 
     right = None
     if args.right:
         n, p = args.right.split(":")
         right = socket.create_connection((n, int(p)))
+        right.send("right")
 
     inputs = None
     if args.inputs:
