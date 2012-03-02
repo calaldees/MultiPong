@@ -48,17 +48,14 @@ class Mass:
 
     def add_force(self, force):
         self.force = (self.force[0]+float(force[0]), self.force[1]+float(force[1]))
-        #print "added force %d,%d" % (force[0], force[1])
     
     def remove(self):
         Mass.all_mass.remove(self)
 
     def apply_force(self):
         if self.force != (0,0):
-            print("force before %d,%d" % (self.force[0], self.force[1]))
             self.vel = (self.vel[0] + self.force[0]/self.mass, self.vel[1] + self.force[1]/self.mass)
             self.force = (0,0) # Once the force is applied, reset it to zero
-            print("vel after %d,%d" % (self.vel[0], self.vel[1]))
     
     def move(self):
         """
@@ -90,6 +87,7 @@ class Ball(Mass):
 class Bat(Mass):
 
     all_bats = []
+    air_viscosity = 0.96
 
     def __init__(self, *args, **kwargs):
         Mass.__init__(self, *args, **kwargs)
@@ -108,7 +106,11 @@ class Bat(Mass):
         # Bounce ball off top and bottom of screen by inverting velocity
         if self.rectangle.y < 0 or self.rectangle.bottom > screen.get_height():
             self.vel = (self.vel[0], -self.vel[1])
-        
+    
+    @staticmethod
+    def apply_air_viscocity_to_all_bats():
+        for bat in Bat.all_bats:
+            bat.vel = (bat.vel[0]*Bat.air_viscosity, bat.vel[1]*Bat.air_viscosity)
 
     
 
@@ -215,6 +217,7 @@ def mainloop(ssock, left, right, inputs):
 
     reset()
     running = True
+    keys    = {}
     while running:
         clock.tick(60)
         
@@ -228,14 +231,15 @@ def mainloop(ssock, left, right, inputs):
             #        mouse_diff = (event.pos[0]-last_mouse_pos[0], event.pos[1]-last_mouse_pos[1])
             #        Bat.all_bats[0].add_force(mouse_diff)
             #    last_mouse_pos = (event.pos[0], event.pos[1])
-                
-            if event.type == pygame.KEYDOWN:
-                bat = Bat.all_bats[0]
-                f   = 10
-                if event.key == pygame.K_UP     : bat.add_force(( 0,-f))
-                if event.key == pygame.K_DOWN   : bat.add_force(( 0, f))
-                if event.key == pygame.K_RIGHT  : bat.add_force(( f, 0))
-                if event.key == pygame.K_LEFT   : bat.add_force((-f, 0))
+
+
+        bat  = Bat.all_bats[0]
+        f    = 20
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP   ]: bat.add_force(( 0,-f))
+        if keys[pygame.K_DOWN ]: bat.add_force(( 0, f))
+        if keys[pygame.K_LEFT ]: bat.add_force((-f, 0))
+        if keys[pygame.K_RIGHT]: bat.add_force(( f, 0))
 
 
         # Black screen
@@ -259,6 +263,7 @@ def mainloop(ssock, left, right, inputs):
         for m in Mass.all_mass:
             m.apply_force()
             m.move()
+        Bat.apply_air_viscocity_to_all_bats()
         
         # Draw balls
         for b in Ball.all_balls:
