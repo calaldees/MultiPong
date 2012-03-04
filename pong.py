@@ -68,13 +68,13 @@ class Mass:
         Mass.all_mass.remove(self)
 
     def apply_force(self):
-        if self.force != (0,0):
+        if self.force and self.force != (0,0):
             self.vel = (self.vel[0] + self.force[0]/self.mass, self.vel[1] + self.force[1]/self.mass)
             self.force = (0,0) # Once the force is applied, reset it to zero
     
     def move(self):
         """
-        Increment the 
+        Increment the mass's position based on velocity
         """
         self.set_pos( (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1]) )
 
@@ -113,6 +113,7 @@ class Ball(Mass):
     def move(self):
         Mass.move(self)
         # Bounce ball off top and bottom of screen by inverting velocity
+        # AllanC - to be replaced by applying vertical force to mass rather than crudely fliping vel
         if self.pos[1] < 0 or self.pos[1] > screen.get_height():
             self.flip_vel_y()
 
@@ -128,6 +129,7 @@ class Bat(Mass):
         pos  = kwargs.get('pos' , ( 0, 0))
         size = kwargs.get('size', (10,50))
         self.rectangle = pygame.Rect(pos[0], pos[1], size[0], size[1])
+        self.pevious_collition_with_balls_tracker = []
 
     def set_pos(self, pos):
         Mass.set_pos(self, pos)
@@ -147,17 +149,28 @@ class Bat(Mass):
             
     @staticmethod
     def apply_ball_collisions_for_all_bats():
-        for b in Ball.all_balls:
-            for bat in Bat.all_bats:
-                if bat.rectangle.colliderect(b.movement_bounding_rect):
+        for bat in Bat.all_bats:
+            pevious_collition_with_balls_tracker     = bat.pevious_collition_with_balls_tracker
+            bat.pevious_collition_with_balls_tracker = []
+            for ball in Ball.all_balls:
+                # Don't allow collitions with the same bat for sequential iterations
+                if ball in pevious_collition_with_balls_tracker:
+                    continue
+                if bat.rectangle.colliderect(ball.movement_bounding_rect):
+                    bat.pevious_collition_with_balls_tracker.append(ball) # Track collition with this ball to prevent duplicate interations
                     print "collide"
-                    rectangle_old = b.rectangle_old
-                    if rectangle_old.right <= bat.rectangle.left:
-                        b.flip_vel_x()
-                        b.set_pos((bat.rectangle.left-(b.radius*2)-1, b.pos[1]))
-                    if rectangle_old.left >= bat.rectangle.right:
-                        b.flip_vel_x()
-                        b.set_pos((bat.rectangle.right+1, b.pos[1]))
+                    force_to_reflect_ball = (2*ball.mass*ball.vel[0]) - (2*bat.mass*bat.vel[0])
+                    ball.add_force((-force_to_reflect_ball,0))
+                    bat.add_force (( force_to_reflect_ball,0))
+                    
+                    #rectangle_old = b.rectangle_old
+                    #if rectangle_old.right <= bat.rectangle.left:
+                    #    b.flip_vel_x()
+                    #    b.set_pos((bat.rectangle.left-(b.radius*2)-1, b.pos[1]))
+                    #if rectangle_old.left >= bat.rectangle.right:
+                    #    b.flip_vel_x()
+                    #    b.set_pos((bat.rectangle.right+1, b.pos[1]))
+                
 
 
 class EventZone():
