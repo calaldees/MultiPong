@@ -283,13 +283,15 @@ def reset():
 # Main Loop
 #----------------------------------------
 
-def mainloop(args, ssock, left, right, inputs):
+def mainloop(args, ssock, inputs):
     global time_elapsed
     global last_mouse_pos
 
     reset()
     running = True
     keys    = {}
+    left    = None
+    right   = None
     while running:
         clock.tick(60)
         
@@ -394,8 +396,6 @@ def mainloop(args, ssock, left, right, inputs):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--left')
-    parser.add_argument('--right')
     parser.add_argument('--inputs')
     parser.add_argument('--bind', default="0.0.0.0")
     parser.add_argument('--port', type=int, default=5000)
@@ -403,18 +403,6 @@ def main(argv):
 
     ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ssock.bind((args.bind, args.port))
-
-    left = None
-    if args.left:
-        n, p = args.left.split(":")
-        left = socket.create_connection((n, int(p)))
-        left.send("left")
-
-    right = None
-    if args.right:
-        n, p = args.right.split(":")
-        right = socket.create_connection((n, int(p)))
-        right.send("right")
 
     inputs = None
     if args.inputs:
