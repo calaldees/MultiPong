@@ -43,14 +43,20 @@ class Mass:
         self.mass  = float(mass)
         Mass.all_mass.append(self)
 
-    #@property
-    #def movement_bounding_rect(self):
-        #max_x = max(self.pos[0], self.pos_old[0])
-        #min_x = min(self.pos[0], self.pos_old[0])
-        #max_y = max(self.pos[1], self.pos_old[1])
-        #min_y = min(self.pos[1], self.pos_old[1])
-        #return pygame.Rect(min_x, min_y, max_x-min_x, max_y-min_y)
+    @property
+    def bounding_rect(self):
+        """
+        Should be overridden by extending class's
+        """
+        return pygame.Rect(self.pos[0], self.pos[1], 1, 1)
 
+    @property
+    def movement_bounding_rect(self):
+        max_x = max(self.pos[0], self.pos_old[0])
+        min_x = min(self.pos[0], self.pos_old[0])
+        max_y = max(self.pos[1], self.pos_old[1])
+        min_y = min(self.pos[1], self.pos_old[1])
+        return pygame.Rect(min_x, min_y, max_x-min_x, max_y-min_y)
 
     def flip_vel_x(self):
         self.vel = (-self.vel[0],  self.vel[1])
@@ -96,6 +102,10 @@ class Ball(Mass):
             return pygame.Rect(self.pos_old[0], self.pos_old[1], self.rectangle.width, self.rectangle.height)
         #else:
         #    return self.rectangle
+    
+    @property
+    def bounding_rect(self):
+        return self.rectangle
 
     @property
     def movement_bounding_rect(self):
@@ -131,6 +141,10 @@ class Bat(Mass):
         self.rectangle = pygame.Rect(pos[0], pos[1], size[0], size[1])
         self.pevious_collition_with_balls_tracker = []
 
+    @property
+    def bounding_rect(self):
+        return self.rectangle
+
     def set_pos(self, pos):
         Mass.set_pos(self, pos)
         self.rectangle.x = pos[0]
@@ -158,19 +172,26 @@ class Bat(Mass):
                     continue
                 if bat.rectangle.colliderect(ball.movement_bounding_rect):
                     bat.pevious_collition_with_balls_tracker.append(ball) # Track collition with this ball to prevent duplicate interations
-                    print "collide"
-                    force_to_reflect_ball = (2*ball.mass*ball.vel[0]) - (2*bat.mass*bat.vel[0])
-                    ball.add_force((-force_to_reflect_ball,0))
-                    bat.add_force (( force_to_reflect_ball,0))
+                    # At this point it becomes relevent what direction the two objects were traveling in order to resolve impulse
+                    # Every action has an equal and opposite reaction.
+                    # We need a force to entirely reverse the ball's direction, that force must in turn be applyed to the bat. The bat has a much higher mass so the kickback is minimal
+                    # The impuse of the bat must be taken into account
+                    #  we have posibilitys
+                    #    bat and ball are moving in opposite directions
+                    #    bat and ball are moving in the same direction
+                    # we need to know the 'Relative' velocity between the two colliding objects
                     
-                    #rectangle_old = b.rectangle_old
-                    #if rectangle_old.right <= bat.rectangle.left:
-                    #    b.flip_vel_x()
-                    #    b.set_pos((bat.rectangle.left-(b.radius*2)-1, b.pos[1]))
-                    #if rectangle_old.left >= bat.rectangle.right:
-                    #    b.flip_vel_x()
-                    #    b.set_pos((bat.rectangle.right+1, b.pos[1]))
-                
+                    if (ball.vel[0] > 0 and bat.vel[0] < 0) or (ball.vel[0] < 0 and bat.vel[0] > 0):
+                        # opposite directions
+                        relative_velocity = ball.vel[0] + bat.vel[0]
+                    else:
+                        # same direction
+                        relative_velocity = ball.vel[0] - bat.vel[0]
+                    
+                    impulse_ball = 2 * ball.mass * relative_velocity
+                    
+                    ball.add_force((-impulse_ball,0))
+                    bat .add_force(( impulse_ball,0))
 
 
 class EventZone():
@@ -183,16 +204,16 @@ class EventZone():
         EventZone.all_zones.append(self)
     
     def trigger_mass_events(self):
-        # Leave area event
-        for m in self.masss_in_zone:
-            if not self.rectangle.collidepoint(m.pos): # If mass has moved out of the zone then perform an event
-                self.event_leave(m)
-        
         # Enter area event
         for m in Mass.all_mass:
-            if m not in self.masss_in_zone and self.rectangle.collidepoint(m.pos):
+            if m not in self.masss_in_zone and self.bounding_rect.colliderect(m.movement_bounding_rect):
                 self.masss_in_zone.append(m)
                 self.event_enter(m)
+
+        # Leave area event
+        for m in self.masss_in_zone:
+            if not self.bounding_rect.colliderect(m.bounding_rect): # If mass has moved out of the zone then perform an event
+                self.event_leave(m)
 
     # Null event methods for overriding
     def event_enter(self, m):
