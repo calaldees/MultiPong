@@ -44,7 +44,7 @@ class Mass:
         Mass.all_mass.append(self)
 
     @property
-    def bounding_rect(self):
+    def rectangle(self):
         """
         Should be overridden by extending class's
         """
@@ -104,10 +104,6 @@ class Ball(Mass):
         #    return self.rectangle
     
     @property
-    def bounding_rect(self):
-        return self.rectangle
-
-    @property
     def movement_bounding_rect(self):
         return self.rectangle.union(self.rectangle_old)
 
@@ -140,10 +136,6 @@ class Bat(Mass):
         size = kwargs.get('size', (10,50))
         self.rectangle = pygame.Rect(pos[0], pos[1], size[0], size[1])
         self.pevious_collition_with_balls_tracker = []
-
-    @property
-    def bounding_rect(self):
-        return self.rectangle
 
     def set_pos(self, pos):
         Mass.set_pos(self, pos)
@@ -206,13 +198,13 @@ class EventZone():
     def trigger_mass_events(self):
         # Enter area event
         for m in Mass.all_mass:
-            if m not in self.masss_in_zone and self.bounding_rect.colliderect(m.movement_bounding_rect):
+            if m not in self.masss_in_zone and self.rectangle.colliderect(m.movement_bounding_rect):
                 self.masss_in_zone.append(m)
                 self.event_enter(m)
 
         # Leave area event
         for m in self.masss_in_zone:
-            if not self.bounding_rect.colliderect(m.bounding_rect): # If mass has moved out of the zone then perform an event
+            if not self.rectangle.colliderect(m.rectangle): # If mass has moved out of the zone then perform an event
                 self.event_leave(m)
 
     # Null event methods for overriding
