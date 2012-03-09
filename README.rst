@@ -26,7 +26,7 @@ Input server
 
 Input client
 
-- HTML5 / javascript compatible bowser
+- HTML5 / javascript compatible browser
 
 
 System overview
