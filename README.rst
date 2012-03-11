@@ -11,10 +11,22 @@ Description
 placeholder
 
 
-Installation and dependecys
-===========================
+Installation and dependecies
+============================
 
-placeholder
+Display clients / servers
+
+- pygame
+
+
+Input server
+
+- node.js
+
+
+Input client
+
+- HTML5 / javascript compatible browser
 
 
 System overview
