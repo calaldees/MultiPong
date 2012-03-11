@@ -411,7 +411,7 @@ def main(argv):
         n, p = args.inputs.split(":")
         inputs = socket.create_connection((n, int(p)))
 
-    mainloop(args, ssock, left, right, inputs)
+    mainloop(args, ssock, inputs) #left, right,
 
 
 if __name__ == "__main__":
