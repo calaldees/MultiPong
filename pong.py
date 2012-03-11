@@ -182,9 +182,9 @@ class Bat(Mass):
                     
                     # To prevent spazzing - if the objects collide, move ball outside each other to prevent repeated collitions
                     if ball.pos_old > bat.pos_old:
-                        ball.set_pos((bat.rectangle.right, ball.pos[1]))
+                        ball.set_pos((bat.rectangle.right             +1, ball.pos[1]))
                     else:
-                        ball.set_pos((bat.rectangle.left-ball.radius, ball.pos[1]))
+                        ball.set_pos((bat.rectangle.left -ball.radius -1, ball.pos[1]))
                     
 
 
