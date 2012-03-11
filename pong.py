@@ -92,7 +92,7 @@ class Ball(Mass):
 
     def __init__(self, *args, **kwargs):
         Mass.__init__(self, *args, **kwargs)
-        self.radius    = kwargs.get('radius',3)
+        self.radius    = kwargs.get('radius',3) # AllanC - BUG! NAME!! it's not really the radius! it's the diameter!
         self.rectangle = pygame.Rect(self.pos[0], self.pos[1], self.radius, self.radius)
         Ball.all_balls.append(self)
 
@@ -173,17 +173,19 @@ class Bat(Mass):
                     #    bat and ball are moving in the same direction
                     # we need to know the 'Relative' velocity between the two colliding objects
                     
-                    if (ball.vel[0] > 0 and bat.vel[0] < 0) or (ball.vel[0] < 0 and bat.vel[0] > 0):
-                        # opposite directions
-                        relative_velocity = ball.vel[0] + bat.vel[0]
+                    relative_velocity = bat.vel[0] - ball.vel[0]
+                    
+                    impulse_ball = 2 * ball.mass * relative_velocity # Force to reflect relative velocity
+                    
+                    ball.add_force(( impulse_ball,0))
+                    bat .add_force((-impulse_ball,0))
+                    
+                    # To prevent spazzing - if the objects collide, move ball outside each other to prevent repeated collitions
+                    if ball.pos_old > bat.pos_old:
+                        ball.set_pos((bat.rectangle.right, ball.pos[1]))
                     else:
-                        # same direction
-                        relative_velocity = ball.vel[0] - bat.vel[0]
+                        ball.set_pos((bat.rectangle.left-ball.radius, ball.pos[1]))
                     
-                    impulse_ball = 2 * ball.mass * relative_velocity
-                    
-                    ball.add_force((-impulse_ball,0))
-                    bat .add_force(( impulse_ball,0))
 
 
 class EventZone():
