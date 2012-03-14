@@ -255,6 +255,7 @@ class ScoreZone(EventZone):
         if callable(self.score_func):
             self.score_func(m)
         #print("score!: %s" % m)
+        self.masss_in_zone.remove(m)
         m.remove()
 
 
