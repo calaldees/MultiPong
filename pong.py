@@ -185,7 +185,12 @@ class Bat(Mass):
                         ball.set_pos((bat.rectangle.right             +1, ball.pos[1]))
                     else:
                         ball.set_pos((bat.rectangle.left -ball.radius -1, ball.pos[1]))
-                    
+
+    def add_force_gravity_well(self):
+        x = self.pos[0] + (self.rectangle.width /2)
+        y = self.pos[1] + (self.rectangle.height/2)
+        for ball in Ball.all_balls:
+            ball.add_force(((x-ball.pos[0])*0.01, (y-ball.pos[1])*0.01))
 
 
 class EventZone():
@@ -318,6 +323,7 @@ def mainloop(args, ssock, inputs):
         if keys[pygame.K_DOWN  ]: bat.add_force(( 0, f))
         if keys[pygame.K_LEFT  ]: bat.add_force((-f, 0))
         if keys[pygame.K_RIGHT ]: bat.add_force(( f, 0))
+        if keys[pygame.K_SPACE ]: bat.add_force_gravity_well()
 
 
         # Black screen
