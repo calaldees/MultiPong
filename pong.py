@@ -208,6 +208,7 @@ class EventZone():
         for m in self.masss_in_zone:
             if not self.rectangle.colliderect(m.rectangle): # If mass has moved out of the zone then perform an event
                 self.event_leave(m)
+                self.masss_in_zone.remove(m)
 
     # Null event methods for overriding
     def event_enter(self, m):
@@ -229,7 +230,6 @@ class NetZone(EventZone):
         EventZone.__init__(self, rectangle)
     
     def event_leave(self, m):
-        self.masss_in_zone.remove(m)
         m.remove()
         #print("mass removed: %s" % m)
     
