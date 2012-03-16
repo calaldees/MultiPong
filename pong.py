@@ -85,7 +85,6 @@ class Mass:
         self.set_pos( (self.pos[0]+self.vel[0], self.pos[1]+self.vel[1]) )
 
 
-
 class Ball(Mass):
 
     all_balls = [] # A sub set of mass's that is only the ball objects
@@ -270,55 +269,82 @@ class ScoreZone(EventZone):
 
 Bat(pos=(100,100), size=(10,50), mass=100)
 
-last_mouse_pos = None
-
-time_elapsed = 0
-
-#----------------------------------------
-# Subroutines
-#----------------------------------------
-
-def reset():
-    global time_elapsed
-    global last_mouse_pos
-    EventZone.all_zones = []
-    NetZone('left')
-    ScoreZone('right')
-    time_elapsed = 0
-
 
 #----------------------------------------
 # Main Loop
 #----------------------------------------
 
-def mainloop(args, ssock, inputs):
-    global time_elapsed
-    global last_mouse_pos
+class Game():
+    def __init__(self):
+        self.last_mouse_pos = None
+        self.server_socket = None
+        self.inputs_socket = None
 
-    reset()
-    running = True
-    keys    = {}
-    left    = None
-    right   = None
-    while running:
-        clock.tick(60)
-        
+
+    def reset(self):
+        EventZone.all_zones = []
+        NetZone('left')
+        ScoreZone('right')
+
+        self.time_elapsed = 0
+        self.running = True
+
+
+    def main(self, argv):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--inputs')
+        parser.add_argument('--bind', default="0.0.0.0")
+        parser.add_argument('--port', type=int, default=5000)
+        args = parser.parse_args(argv[1:])
+
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((args.bind, args.port))
+
+        if args.inputs:
+            n, p = args.inputs.split(":")
+            self.inputs_socket = socket.create_connection((n, int(p)))
+
+        self.args = args
+
+        self.main_loop()
+
+
+    def main_loop(self):
+        self.reset()
+
+        while self.running:
+            clock.tick(60)
+            
+            self.handle_inputs()
+            self.spawn_balls()
+            self.handle_zones()
+            self.handle_physics()
+            self.render()
+            self.handle_network()
+            self.time_elapsed += 1
+            
+        pygame.quit()
+
+        print("Ticks Elapsed: %s" % self.time_elapsed)
+
+
+    def handle_inputs(self):
         # Inputs
+        keys    = {}
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                self.running = False
                 
             #if event.type == pygame.MOUSEMOTION:
-            #    if last_mouse_pos:
-            #        mouse_diff = (event.pos[0]-last_mouse_pos[0], event.pos[1]-last_mouse_pos[1])
+            #    if self.last_mouse_pos:
+            #        mouse_diff = (event.pos[0]-self.last_mouse_pos[0], event.pos[1]-self.last_mouse_pos[1])
             #        Bat.all_bats[0].add_force(mouse_diff)
-            #    last_mouse_pos = (event.pos[0], event.pos[1])
-
+            #    self.last_mouse_pos = (event.pos[0], event.pos[1])
 
         bat  = Bat.all_bats[0]
         f    = 20
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]: running=False
+        if keys[pygame.K_ESCAPE]: self.running=False
         if keys[pygame.K_UP    ]: bat.add_force(( 0,-f))
         if keys[pygame.K_DOWN  ]: bat.add_force(( 0, f))
         if keys[pygame.K_LEFT  ]: bat.add_force((-f, 0))
@@ -326,9 +352,7 @@ def mainloop(args, ssock, inputs):
         if keys[pygame.K_SPACE ]: bat.add_force_gravity_well()
 
 
-        # Black screen
-        screen.fill(colors['background'])
-        
+    def spawn_balls(self):
         # Create new Balls for testing
         masss_to_create = 30 - len(Mass.all_mass)
         for i in range(masss_to_create):
@@ -337,19 +361,29 @@ def mainloop(args, ssock, inputs):
                     pos = (screen.get_width()/2, screen.get_height()/2), #(random.random()*screen.get_width(), random.random()*screen.get_height()),
                     vel = (random.random()*max_vel-max_vel/2 , random.random()*max_vel-max_vel/2 ),
                 )
-        
+
+
+    def handle_zones(self):
         # Zone events
         for z in EventZone.all_zones:
-            pygame.draw.rect(screen, colors['zone'], z.rectangle)
             z.trigger_mass_events()
-        
+            
+
+    def handle_physics(self):
         # Apply forces and move all mass's
         Bat.apply_ball_collisions_for_all_bats()
         for m in Mass.all_mass:
             m.apply_force()
             m.move()
         Bat.apply_air_viscocity_to_all_bats()
-        
+            
+
+    def render(self):
+        # Black screen
+        screen.fill(colors['background'])
+
+        for z in EventZone.all_zones:
+            pygame.draw.rect(screen, colors['zone'], z.rectangle)
         
         # Draw balls
         for b in Ball.all_balls:
@@ -357,21 +391,25 @@ def mainloop(args, ssock, inputs):
         # Draw bats
         for bat in Bat.all_bats:
             pygame.draw.rect(screen, colors['bat'], bat.rectangle)
-        
-        time_elapsed += 1
-        
+            
         pygame.display.update()
 
+
+    def handle_network(self):
+        left = None
+        right = None
+
         l = []
-        if ssock: l.append(ssock)
+        if self.server_socket: l.append(self.server_socket)
         if left: l.append(left)
         if right: l.append(right)
-        if inputs: l.append(inputs)
+        if self.inputs_socket: l.append(self.inputs_socket)
+
         [readable, writable, errors] = select(l, [], [], 0)
         for r in readable:
-            if r == ssock:
+            if r == self.server_socket:
                 continue
-                tmp_sock = ssock.accept()
+                tmp_sock = self.server_socket.accept()
                 d = tmp_sock.recv(1024)
                 if d.startswith("left"):
                     left = tmp_sock
@@ -383,44 +421,22 @@ def mainloop(args, ssock, inputs):
             if r == right:
                 d = r.recv(1024)
                 print "from right:", d
-            if r == inputs:
+            if r == self.inputs_socket:
                 d = r.recv(1024)
                 if d:
                     d = json.loads(d)
                     print "from inputs:", d
                     if d['action'] == "hello":
                         print "responding to hello"
-                        inputs.send(json.dumps({'action':'hello', 'value':'screen', 'port': args.port})+"\n")
+                        self.inputs_socket.send(json.dumps({'action':'hello', 'value':'screen', 'port': args.port})+"\n")
                     if d['action'] == "left":
                         print "adding left"
                         left = socket.create_connection((d['value'], int(d['port'])))
                     if d['action'] == "right":
                         print "adding right"
                         right = socket.create_connection((d['value'], int(d['port'])))
-        
-    pygame.quit()
-
-    print("Ticks Elapsed: %s" % time_elapsed)
-
-
-def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--inputs')
-    parser.add_argument('--bind', default="0.0.0.0")
-    parser.add_argument('--port', type=int, default=5000)
-    args = parser.parse_args(argv[1:])
-
-    ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssock.bind((args.bind, args.port))
-
-    inputs = None
-    if args.inputs:
-        n, p = args.inputs.split(":")
-        inputs = socket.create_connection((n, int(p)))
-
-    mainloop(args, ssock, inputs) #left, right,
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(Game().main(sys.argv))
 
