@@ -38,7 +38,15 @@ Screen = module.exports.Screen = function Screen (c, screens) {
         if (data.action === 'hello' && data.value === 'screen') {
           self.ipAddress = c.remoteAddress;
           self.port = data.port || 5000;
-          self.index = screens.length;
+          self.index = null;
+          for (var i in screens) {
+            if (screens[i].state === 'disconnected') {
+              console.log('reconnect', i);
+              self.index = i;
+              break;
+            }
+          }
+          self.index = self.index || screens.length;
           self.write({action: 'ok', screen: self.index});
           screens[self.index] = self;
           if (self.index > 0) {

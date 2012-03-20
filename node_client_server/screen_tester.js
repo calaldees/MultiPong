@@ -7,13 +7,19 @@ var c = net.createConnection(4000, function () {
     console.log('data', data);
     switch (state) {
       case 'handshaking':
-        if (data.action !== 'hello' || data.value !== 'node') return c.end();
+        if (data.action !== 'hello' || data.value !== 'node') {
+          console.log('invalid handshake');
+          return c.end();
+        }
         console.log('handshaking -> waiting');
         c.write(JSON.stringify({action: 'hello', value: 'screen'}) + '\n');
         state = 'waiting';
         break;
       case 'waiting':
-        if (data.action === 'ok' && data.screen) return c.end();
+        if (!(data.action === 'ok' && typeof data.screen !== 'undefined')) {
+          console.log('invalid waiting return', data.action, data.screen);
+          return c.end();
+         }
         console.log('waiting -> active', data.screen);
         state = 'active';
         break;
