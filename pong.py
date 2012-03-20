@@ -238,8 +238,11 @@ class NetZone(EventZone):
         #print("mass removed: %s" % m)
     
     def event_enter(self, m):
-        #print("net send: %s" % m)
-        pass
+        print("net send: %s" % m)
+        if self.rectangle == "left" and Game.left:
+            Game.left.send(str(m))
+        if self.rectangle == "right" and Game.right:
+            Game.right.send(str(m))
 
 
 class ScoreZone(EventZone):
@@ -275,6 +278,9 @@ Bat(pos=(100,100), size=(10,50), mass=100)
 #----------------------------------------
 
 class Game():
+    left = None
+    right = None
+
     def __init__(self):
         self.last_mouse_pos = None
         self.server_socket = None
@@ -396,13 +402,10 @@ class Game():
 
 
     def handle_network(self):
-        left = None
-        right = None
-
         l = []
         if self.server_socket: l.append(self.server_socket)
-        if left: l.append(left)
-        if right: l.append(right)
+        if Game.left: l.append(Game.left)
+        if Game.right: l.append(Game.right)
         if self.inputs_socket: l.append(self.inputs_socket)
 
         [readable, writable, errors] = select(l, [], [], 0)
@@ -412,13 +415,13 @@ class Game():
                 tmp_sock = self.server_socket.accept()
                 d = tmp_sock.recv(1024)
                 if d.startswith("left"):
-                    left = tmp_sock
+                    Game.left = tmp_sock
                 if d.startswith("right"):
-                    right = tmp_sock
-            if r == left:
+                    Game.right = tmp_sock
+            if r == Game.left:
                 d = r.recv(1024)
                 print "from left:", d
-            if r == right:
+            if r == Game.right:
                 d = r.recv(1024)
                 print "from right:", d
             if r == self.inputs_socket:
@@ -431,10 +434,10 @@ class Game():
                         self.inputs_socket.send(json.dumps({'action':'hello', 'value':'screen', 'port': args.port})+"\n")
                     if d['action'] == "left":
                         print "adding left"
-                        left = socket.create_connection((d['value'], int(d['port'])))
+                        Game.left = socket.create_connection((d['value'], int(d['port'])))
                     if d['action'] == "right":
                         print "adding right"
-                        right = socket.create_connection((d['value'], int(d['port'])))
+                        Game.right = socket.create_connection((d['value'], int(d['port'])))
 
 
 if __name__ == "__main__":
