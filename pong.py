@@ -299,10 +299,8 @@ class Game():
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((args.bind, args.port))
-
-        if args.inputs:
-            n, p = args.inputs.split(":")
-            self.inputs_socket = socket.create_connection((n, int(p)))
+        self.server_socket.listen(5)
+        print "Screen-Screen socket listening on", (args.bind, args.port)
 
         self.args = args
 
@@ -312,6 +310,10 @@ class Game():
         pygame.init()
         pygame.display.set_mode((640, 480))
         Game.screen = pygame.display.get_surface()
+
+        if args.inputs:
+            n, p = args.inputs.split(":")
+            self.inputs_socket = socket.create_connection((n, int(p)))
 
         self.main_loop()
 
@@ -435,10 +437,10 @@ class Game():
                         print "responding to hello"
                         self.inputs_socket.send(json.dumps({'action':'hello', 'value':'screen', 'port': self.args.port})+"\n")
                     if d['action'] == "left":
-                        print "adding left"
+                        print "adding left on", (d['value'], int(d['port']))
                         Game.left = socket.create_connection((d['value'], int(d['port'])))
                     if d['action'] == "right":
-                        print "adding right"
+                        print "adding right on", (d['value'], int(d['port']))
                         Game.right = socket.create_connection((d['value'], int(d['port'])))
 
 
