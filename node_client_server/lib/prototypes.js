@@ -46,7 +46,7 @@ Screen = module.exports.Screen = function Screen (c, screens) {
               break;
             }
           }
-          self.index = self.index || screens.length;
+          self.index = String(self.index || screens.length);
           self.write({action: 'ok', screen: self.index});
           screens[self.index] = self;
           if (self.index > 0) {
