@@ -2,6 +2,7 @@
 
 import pygame
 import random
+import math
 import argparse
 import sys
 import socket
@@ -91,8 +92,11 @@ class Ball(Mass):
 
     def __init__(self, *args, **kwargs):
         Mass.__init__(self, *args, **kwargs)
-        self.radius    = kwargs.get('radius',3) # AllanC - BUG! NAME!! it's not really the radius! it's the diameter!
-        self.rectangle = pygame.Rect(self.pos[0], self.pos[1], self.radius, self.radius)
+        self.diameter  = kwargs.get('diameter',3.0)
+        self.mass      = math.pi * math.pow(self.diameter/2, 2)
+        self.rectangle = pygame.Rect(self.pos[0], self.pos[1], int(self.diameter), int(self.diameter))
+        self.angular_velocity = 0.0
+        self.direction        = 0.0
         Ball.all_balls.append(self)
 
     @property
@@ -181,9 +185,9 @@ class Bat(Mass):
                     
                     # To prevent spazzing - if the objects collide, move ball outside each other to prevent repeated collitions
                     if ball.pos_old > bat.pos_old:
-                        ball.set_pos((bat.rectangle.right             +1, ball.pos[1]))
+                        ball.set_pos((bat.rectangle.right               +1, ball.pos[1]))
                     else:
-                        ball.set_pos((bat.rectangle.left -ball.radius -1, ball.pos[1]))
+                        ball.set_pos((bat.rectangle.left -ball.diameter -1, ball.pos[1]))
 
     def add_force_gravity_well(self):
         x = self.pos[0] + (self.rectangle.width /2)
@@ -362,10 +366,11 @@ class Game():
         # Create new Balls for testing
         masss_to_create = 30 - len(Mass.all_mass)
         for i in range(masss_to_create):
-            max_vel = 3
+            max_vel = 5
             b = Ball(
                     pos = (screen.get_width()/2, screen.get_height()/2), #(random.random()*screen.get_width(), random.random()*screen.get_height()),
                     vel = (random.random()*max_vel-max_vel/2 , random.random()*max_vel-max_vel/2 ),
+                    diameter = random.random()*6+2
                 )
 
 
@@ -393,7 +398,7 @@ class Game():
         
         # Draw balls
         for b in Ball.all_balls:
-            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]+b.radius/2),int(b.pos[1]+b.radius/2)), b.radius) #, width=0
+            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]+b.diameter/2),int(b.pos[1]+b.diameter/2)), int(b.diameter)) #, width=0
         # Draw bats
         for bat in Bat.all_bats:
             pygame.draw.rect(screen, colors['bat'], bat.rectangle)
