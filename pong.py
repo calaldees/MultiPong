@@ -13,10 +13,11 @@ import json
 # Constants
 #----------------------------------------
 colors = dict(
-    background  = (  0,   0,   0),
-    ball        = (255, 255, 255),
-    bat         = (255, 255,   0),
-    zone        = (  0,   0, 100),
+    background     = (  0,   0,   0),
+    ball           = (255, 255, 255),
+    ball_direction = (255,   0,   0),
+    bat            = (255, 255,   0),
+    zone           = (  0,   0, 100),
 )
 
 
@@ -87,8 +88,8 @@ class Ball(Mass):
         self.diameter  = kwargs.get('diameter',3.0)
         self.mass      = math.pi * math.pow(self.diameter/2, 2)
         self.rectangle = pygame.Rect(self.pos[0], self.pos[1], int(self.diameter), int(self.diameter))
-        self.angular_velocity = 0.0
-        self.direction        = 0.0
+        self.angular_velocity = (random.random()*0.25)-0.25
+        self.direction        = 0.0 # in radians
         Ball.all_balls.append(self)
 
     @property
@@ -113,6 +114,7 @@ class Ball(Mass):
     
     def move(self):
         Mass.move(self)
+        self.direction += self.angular_velocity
         # Bounce ball off top and bottom of screen by inverting velocity
         # AllanC - to be replaced by applying vertical force to mass rather than crudely fliping vel
         if self.pos[1] < 0 or self.pos[1] > Game.screen.get_height():
@@ -254,7 +256,7 @@ class ScoreZone(EventZone):
         self.score_func = score_func
         # Call super contructor
         EventZone.__init__(self, rectangle)
-        
+    
     def event_enter(self, m):
         if callable(self.score_func):
             self.score_func(m)
@@ -402,7 +404,12 @@ class Game():
         
         # Draw balls
         for b in Ball.all_balls:
-            pygame.draw.circle(Game.screen, colors['ball'], (int(b.pos[0]+b.diameter/2),int(b.pos[1]+b.diameter/2)), int(b.diameter)) #, width=0
+            radius   = b.diameter/2
+            center_x = int(b.pos[0]+radius)
+            center_y = int(b.pos[1]+radius)
+            pygame.draw.circle(Game.screen, colors['ball'          ], (center_x,center_y), int(b.diameter))
+            pygame.draw.line  (Game.screen, colors['ball_direction'], (center_x,center_y), (center_x+math.cos(b.direction)*(radius+1), center_y+math.sin(b.direction)*(radius+1)) )
+            
 
         # Draw bats
         for bat in Bat.all_bats:
