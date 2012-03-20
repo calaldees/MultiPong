@@ -88,7 +88,7 @@ class Ball(Mass):
         self.diameter  = kwargs.get('diameter',3.0)
         self.mass      = math.pi * math.pow(self.diameter/2, 2)
         self.rectangle = pygame.Rect(self.pos[0], self.pos[1], int(self.diameter), int(self.diameter))
-        self.angular_velocity = (random.random()*0.25)-0.25
+        self.angular_velocity = (random.random()*0.5)-0.25
         self.direction        = 0.0 # in radians
         Ball.all_balls.append(self)
 
