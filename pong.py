@@ -10,14 +10,6 @@ from select import select
 import json
 
 #----------------------------------------
-# Pygame Setup
-#----------------------------------------
-pygame.init()
-pygame.display.set_mode((640, 480))
-screen = pygame.display.get_surface()
-clock = pygame.time.Clock()
-
-#----------------------------------------
 # Constants
 #----------------------------------------
 colors = dict(
@@ -123,7 +115,7 @@ class Ball(Mass):
         Mass.move(self)
         # Bounce ball off top and bottom of screen by inverting velocity
         # AllanC - to be replaced by applying vertical force to mass rather than crudely fliping vel
-        if self.pos[1] < 0 or self.pos[1] > screen.get_height():
+        if self.pos[1] < 0 or self.pos[1] > Game.screen.get_height():
             self.flip_vel_y()
 
 
@@ -148,7 +140,7 @@ class Bat(Mass):
     def move(self):
         Mass.move(self)
         # Bounce ball off top and bottom of screen by inverting velocity
-        if self.rectangle.y < 0 or self.rectangle.bottom > screen.get_height():
+        if self.rectangle.y < 0 or self.rectangle.bottom > Game.screen.get_height():
             self.vel = (self.vel[0], -self.vel[1])
     
     @staticmethod
@@ -229,11 +221,12 @@ class NetZone(EventZone):
     
     def __init__(self, rectangle=None):
         # Shortcuts to define dead zone areas from strings. Automatically creates rectangle areas
+        self.rectangle_name = rectangle
         default_zone_width = 20
         if   rectangle == 'left':
-            rectangle = pygame.Rect( 0                                   ,  0                 , default_zone_width, screen.get_height() )
+            rectangle = pygame.Rect( 0                                   ,  0                 , default_zone_width, Game.screen.get_height() )
         elif rectangle == 'right':
-            rectangle = pygame.Rect( screen.get_width()-default_zone_width, default_zone_width, default_zone_width, screen.get_height() )
+            rectangle = pygame.Rect( screen.get_width()-default_zone_width, default_zone_width, default_zone_width, Game.screen.get_height() )
         # Call super contructor
         EventZone.__init__(self, rectangle)
     
@@ -243,9 +236,9 @@ class NetZone(EventZone):
     
     def event_enter(self, m):
         print("net send: %s" % m)
-        if self.rectangle == "left" and Game.left:
+        if self.rectangle_name == "left" and Game.left:
             Game.left.send(str(m))
-        if self.rectangle == "right" and Game.right:
+        if self.rectangle_name == "right" and Game.right:
             Game.right.send(str(m))
 
 
@@ -255,9 +248,9 @@ class ScoreZone(EventZone):
         # Shortcuts to define score zones - bit cumbersom .. but all events are delt with in the same way
         default_zone_width = 20 * 2
         if   rectangle == 'left':
-            rectangle = pygame.Rect( 0-default_zone_width,  0-default_zone_width, default_zone_width, screen.get_height()+default_zone_width*2 )
+            rectangle = pygame.Rect( 0-default_zone_width,  0-default_zone_width, default_zone_width, Game.screen.get_height()+default_zone_width*2 )
         elif rectangle == 'right':
-            rectangle = pygame.Rect( screen.get_width()  ,  0-default_zone_width, default_zone_width, screen.get_height()+default_zone_width*2 )
+            rectangle = pygame.Rect( Game.screen.get_width()  ,  0-default_zone_width, default_zone_width, Game.screen.get_height()+default_zone_width*2 )
         self.score_func = score_func
         # Call super contructor
         EventZone.__init__(self, rectangle)
@@ -284,6 +277,7 @@ Bat(pos=(100,100), size=(10,50), mass=100)
 class Game():
     left = None
     right = None
+    screen = None
 
     def __init__(self):
         self.last_mouse_pos = None
@@ -309,12 +303,21 @@ class Game():
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((args.bind, args.port))
+        self.server_socket.listen(5)
+        print "Screen-Screen socket listening on", (args.bind, args.port)
+
+        self.args = args
+
+        #----------------------------------------
+        # Pygame Setup
+        #----------------------------------------
+        pygame.init()
+        pygame.display.set_mode((640, 480))
+        Game.screen = pygame.display.get_surface()
 
         if args.inputs:
             n, p = args.inputs.split(":")
             self.inputs_socket = socket.create_connection((n, int(p)))
-
-        self.args = args
 
         self.main_loop()
 
@@ -322,6 +325,7 @@ class Game():
     def main_loop(self):
         self.reset()
 
+        clock = pygame.time.Clock()
         while self.running:
             clock.tick(60)
             
@@ -368,7 +372,7 @@ class Game():
         for i in range(masss_to_create):
             max_vel = 5
             b = Ball(
-                    pos = (screen.get_width()/2, screen.get_height()/2), #(random.random()*screen.get_width(), random.random()*screen.get_height()),
+                    pos = (Game.screen.get_width()/2, Game.screen.get_height()/2), #(random.random()*screen.get_width(), random.random()*screen.get_height()),
                     vel = (random.random()*max_vel-max_vel/2 , random.random()*max_vel-max_vel/2 ),
                     diameter = random.random()*6+2
                 )
@@ -391,17 +395,18 @@ class Game():
 
     def render(self):
         # Black screen
-        screen.fill(colors['background'])
+        Game.screen.fill(colors['background'])
 
         for z in EventZone.all_zones:
-            pygame.draw.rect(screen, colors['zone'], z.rectangle)
+            pygame.draw.rect(Game.screen, colors['zone'], z.rectangle)
         
         # Draw balls
         for b in Ball.all_balls:
-            pygame.draw.circle(screen, colors['ball'], (int(b.pos[0]+b.diameter/2),int(b.pos[1]+b.diameter/2)), int(b.diameter)) #, width=0
+            pygame.draw.circle(Game.screen, colors['ball'], (int(b.pos[0]+b.diameter/2),int(b.pos[1]+b.diameter/2)), int(b.diameter)) #, width=0
+
         # Draw bats
         for bat in Bat.all_bats:
-            pygame.draw.rect(screen, colors['bat'], bat.rectangle)
+            pygame.draw.rect(Game.screen, colors['bat'], bat.rectangle)
             
         pygame.display.update()
 
@@ -436,12 +441,12 @@ class Game():
                     print "from inputs:", d
                     if d['action'] == "hello":
                         print "responding to hello"
-                        self.inputs_socket.send(json.dumps({'action':'hello', 'value':'screen', 'port': args.port})+"\n")
+                        self.inputs_socket.send(json.dumps({'action':'hello', 'value':'screen', 'port': self.args.port})+"\n")
                     if d['action'] == "left":
-                        print "adding left"
+                        print "adding left on", (d['value'], int(d['port']))
                         Game.left = socket.create_connection((d['value'], int(d['port'])))
                     if d['action'] == "right":
-                        print "adding right"
+                        print "adding right on", (d['value'], int(d['port']))
                         Game.right = socket.create_connection((d['value'], int(d['port'])))
 
 
