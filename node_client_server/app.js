@@ -63,7 +63,7 @@ io.sockets.on('connection', function (socket) {
 app.listen(3000);
 tcp_server.listen(4000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
-
+console.log("TCP server listening on port %d", tcp_server.address().port);
 var c = repl.start().context
 
 c.app = app;
