@@ -94,7 +94,7 @@ Screen = module.exports.Screen = function Screen (c, screens) {
 Screen.prototype = new events.EventEmitter();
 
 Screen.prototype.write = function (object) {
-  if (this.state !== 'disconnected' && this.c)
+  if (this.state !== 'disconnected' && this.c && this.c.writable)
     this.c.write(
       JSON.stringify(object) + '\n'
     );
